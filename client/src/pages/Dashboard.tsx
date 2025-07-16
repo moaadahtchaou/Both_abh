@@ -1,7 +1,7 @@
-import { Building, Wrench, CheckCircle, AlertTriangle, User } from 'lucide-react';
+import { Building, Wrench, CheckCircle, AlertTriangle, User, Save } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import React, { useState, useEffect } from 'react';
 
-import React from 'react';
 
 const StatCard = ({ icon, title, value, subtext, color, iconColor }) => (
   <div className="bg-gray-800/50 border border-gray-700/50 p-6 rounded-2xl shadow-lg flex items-center space-x-4">
@@ -16,13 +16,16 @@ const StatCard = ({ icon, title, value, subtext, color, iconColor }) => (
   </div>
 );
 
-const Dashboard = ({ sites, equipment, activities }) => {
+const Dashboard = ({ user, sites, equipment, activities }) => {
   const equipmentStatusData = [
       { name: 'En utilisation', value: equipment.filter(e => e.status === 'En utilisation').length },
       { name: 'Disponible', value: equipment.filter(e => e.status === 'Disponible').length },
       { name: 'En maintenance', value: equipment.filter(e => e.status === 'En maintenance').length },
   ];
   const COLORS = ['#0ea5e9', '#22c55e', '#ef4444']; // sky, green, red
+
+
+
 
   return (
       <div className="space-y-8">

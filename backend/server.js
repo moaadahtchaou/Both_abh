@@ -5,7 +5,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs'); // Import bcrypt
 const User = require('./models/User'); // Import User model
 const authRoutes = require('./auth');
-const protectedRoutes = require('./protected');
+const { router: protectedRoutes } = require('./protected'); // Fix the import
+const userRoutes = require('./user'); // 1. Import user routes
 
 dotenv.config();
 
@@ -30,8 +31,10 @@ const seedAdminUser = async () => {
       const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
       await User.create({
+        name: 'ismail Rwawi',
         email: adminEmail,
         password: hashedPassword,
+        role: 'Admin'
       });
       console.log('Admin user has been created successfully.');
     } else {
@@ -56,7 +59,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
-app.use('/api', protectedRoutes);
+app.use('/api/protected', protectedRoutes); // Update the path to be more specific
+app.use('/api', userRoutes); // 2. Use the new user routes
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

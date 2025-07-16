@@ -19,9 +19,8 @@ function Login() {
   const mutation = useMutation({
     mutationFn: loginUser,
     onSuccess: (data) => {
-      localStorage.setItem('token', data.token);
-      console.log('Login successful, token saved:', data.token);
-      // Redirect to dashboard on successful login
+      localStorage.setItem('token', data.token); // Only store the token
+      console.log('Login successful, token saved');
       window.location.href = '/dashboard';
     },
     onError: (error) => {
@@ -42,6 +41,7 @@ function Login() {
     mutation.mutate({ email: formData.email, password: formData.password });
   };
 
+  // ... (rest of the component remains the same)
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">

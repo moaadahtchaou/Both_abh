@@ -1,12 +1,26 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const router = express.Router();
-const JWT_SECRET = 'your_jwt_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    console.error('JWT_SECRET is not defined in environment variables');
+    process.exit(1);
+}
 
 // Middleware to verify the token
 const authMiddleware = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Authorization header must start with Bearer' });
+    }
+
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ message: 'No token provided' });
@@ -17,7 +31,8 @@ const authMiddleware = (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
+        console.error('Token verification failed:', error.message);
+        res.status(401).json({ message: 'Invalid or expired token' });
     }
 };
 
@@ -26,4 +41,5 @@ router.get('/dashboard', authMiddleware, (req, res) => {
     res.json({ message: `Welcome to the dashboard, user ${req.user.id}` });
 });
 
-module.exports = router;
+// Export the middleware
+module.exports = { router, authMiddleware };
