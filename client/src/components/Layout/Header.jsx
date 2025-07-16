@@ -29,10 +29,7 @@ const Header = ({ activeView, onToggleSidebar, isSidebarOpen, user }) => {
                 <h1 className="text-2xl font-bold text-gray-100">{activeView}</h1>
             </div>
             <div className="flex items-center space-x-6">
-                <div className="relative hidden md:block">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="text" placeholder="Rechercher..." className="bg-gray-700 text-gray-200 rounded-lg pl-10 pr-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-sky-500 border border-transparent focus:border-sky-500" />
-                </div>
+
                 <button className="relative text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700">
                     <Bell size={22} />
                     <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full ring-2 ring-gray-800"></span>
@@ -55,17 +52,6 @@ const Header = ({ activeView, onToggleSidebar, isSidebarOpen, user }) => {
                                 <p className="text-sm font-semibold text-white">{user?.name}</p>
                                 <p className="text-xs text-gray-400">{user?.email}</p>
                             </div>
-                            
-                            <button className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center space-x-2">
-                                <User size={16} />
-                                <span>Profile</span>
-                            </button>
-                            
-                            <button className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center space-x-2">
-                                <Settings size={16} />
-                                <span>Settings</span>
-                            </button>
-                            
                             <div className="border-t border-gray-700">
                                 <button 
                                     onClick={handleLogout}

@@ -4,6 +4,7 @@ import Chantiers from './pages/Chantiers'
 import Materiel from './pages/Materiel'
 import Rapports from './pages/RapportView'
 import Login from './pages/Login'
+import AddChantier from './pages/AddChantier'
 import Sidebar from './components/Layout/Sidebar'
 import Header from './components/Layout/Header'
 import { initialSites, initialEquipment, recentActivities } from './store/db'
@@ -109,7 +110,15 @@ function App() {
 	          </AuthenticatedLayout>
 	        </ProtectedRoute>
 	      } />
-	      
+
+	      <Route path="/chantiers/add" element={
+	        <ProtectedRoute>
+	          <AuthenticatedLayout>
+	            <AddChantier />
+	          </AuthenticatedLayout>
+	        </ProtectedRoute>
+	      } />
+
 	      <Route path="/materiel" element={
 	        <ProtectedRoute>
 	          <AuthenticatedLayout>
@@ -117,7 +126,7 @@ function App() {
 	          </AuthenticatedLayout>
 	        </ProtectedRoute>
 	      } />
-	      
+
 	      <Route path="/rapports" element={
 	        <ProtectedRoute>
 	          <AuthenticatedLayout>
