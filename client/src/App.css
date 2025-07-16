@@ -1,0 +1,45 @@
+/* Custom styles for the dark-mode login page */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #111827; /* bg-gray-900 */
+}
+
+
+
+/* Custom focus styles for better accessibility */
+input:focus, button:focus {
+  outline: none;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937; /* bg-gray-800 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00AEEF;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0098d6;
+}
+
+/* Custom glow effect for the login card */
+.bg-gray-800 {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Enhanced focus ring for better visibility in dark mode */
+.focus\:ring-\[#00AEEF\]:focus {
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.3);
+}
