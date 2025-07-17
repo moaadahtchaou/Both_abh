@@ -12,10 +12,36 @@ import {
   Calculator,
   ClipboardList,
   DollarSign,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Function to create a new chantier
+const createChantier = async (chantierData) => {
+  const token = localStorage.getItem('token');
+  const { data } = await axios.post('http://localhost:5000/api/chantiers', chantierData, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return data;
+};
 
 const AddChantier = () => {
+  const navigate = useNavigate();
+  const [error, setError] = React.useState('');
+
+  const mutation = useMutation({
+    mutationFn: createChantier,
+    onSuccess: () => {
+      navigate('/chantiers'); // Redirect to chantiers list on success
+    },
+    onError: (error) => {
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la création du chantier');
+    }
+  });
+
   const [formData, setFormData] = React.useState({
     name: '',
     location: {
@@ -65,8 +91,8 @@ const AddChantier = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // TODO: Add API call to save the chantier
+    setError('');
+    mutation.mutate(formData);
   };
 
   return (
@@ -75,7 +101,7 @@ const AddChantier = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button 
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/chantiers')}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -83,6 +109,13 @@ const AddChantier = () => {
           <h2 className="text-2xl font-bold text-white">Nouveau Chantier</h2>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 space-y-10">
@@ -135,10 +168,20 @@ const AddChantier = () => {
         <div className="flex justify-end pt-6 border-t border-gray-700/50">
           <button
             type="submit"
-            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-8 py-3 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg text-base font-semibold"
+            disabled={mutation.isPending}
+            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-8 py-3 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={20} />
-            <span>Enregistrer le Chantier</span>
+            {mutation.isPending ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                <span>Création en cours...</span>
+              </>
+            ) : (
+              <>
+                <Save size={20} />
+                <span>Enregistrer le Chantier</span>
+              </>
+            )}
           </button>
         </div>
       </form>

@@ -1,10 +1,12 @@
 import { X, Menu, ChevronDown, Bell, Search, LogOut, User, Settings, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 const Header = ({ activeView, onToggleSidebar, isSidebarOpen, user }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // Function to get user initials
     const getUserInitials = (name) => {
@@ -16,7 +18,11 @@ const Header = ({ activeView, onToggleSidebar, isSidebarOpen, user }) => {
     };
 
     const handleLogout = () => {
+        // Clear the token from localStorage
         localStorage.removeItem('token');
+        // Clear the React Query cache
+        queryClient.clear();
+        // Navigate to login page
         navigate('/login');
     };
 

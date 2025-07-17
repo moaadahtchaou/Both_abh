@@ -2,67 +2,34 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Import bcrypt
-const User = require('./models/User'); // Import User model
+const bcrypt = require('bcryptjs');
+const User = require('./models/User');
 const authRoutes = require('./auth');
-const { router: protectedRoutes } = require('./protected'); // Fix the import
-const userRoutes = require('./user'); // 1. Import user routes
+const { router: protectedRoutes } = require('./protected');
+const userRoutes = require('./user');
+const chantierRoutes = require('./chantier');
+const materielRoutes = require('./materiel');
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5000;
 
-/**
- * Seeds the database with a default admin user if it doesn't already exist.
- * This function runs on server startup.
- */
-const seedAdminUser = async () => {
-  try {
-    const adminEmail = 'ismaylabhaje@gmail.com';
-    const adminPassword = 'ismail123'; // The plain-text password
-
-    // Check if the admin user already exists
-    const existingAdmin = await User.findOne({ email: adminEmail });
-
-    if (!existingAdmin) {
-      // If admin doesn't exist, hash the password and create the user
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(adminPassword, salt);
-
-      await User.create({
-        name: 'ismail Rwawi',
-        email: adminEmail,
-        password: hashedPassword,
-        role: 'Admin'
-      });
-      console.log('Admin user has been created successfully.');
-    } else {
-      console.log('Admin user already exists.');
-    }
-  } catch (error) {
-    console.error('Error during admin user seeding:', error);
-  }
-};
-
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('MongoDB connected successfully');
-    // Call the function to create the admin user after connecting
-    seedAdminUser();
-  })
-  .catch(err => console.error('MongoDB connection error:', err));
-
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI) // Changed from MONGODB_URI to MONGO_URI
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+// Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/protected', protectedRoutes); // Update the path to be more specific
-app.use('/api', userRoutes); // 2. Use the new user routes
+app.use('/api', userRoutes);
+app.use('/api', chantierRoutes);
+app.use('/api', materielRoutes);
 
-
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });

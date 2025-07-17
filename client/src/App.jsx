@@ -67,6 +67,16 @@ function App() {
         return children;
     };
 
+    // Public Route wrapper for login page - redirects to dashboard if already authenticated
+    const PublicRoute = ({ children }) => {
+        if (isLoading) {
+            return <div className="flex justify-center items-center h-screen"><LoadingSpinner /></div>;
+        }
+        if (user) {
+            return <Navigate to="/dashboard" replace />;
+        }
+        return children;
+    };
 
     // Layout wrapper for authenticated pages
     const AuthenticatedLayout = ({ children }) => (
@@ -88,7 +98,11 @@ function App() {
 
     return (
         <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={
+                <PublicRoute>
+                    <Login />
+                </PublicRoute>
+            } />
 
             <Route path="/" element={
                 <ProtectedRoute>
@@ -109,32 +123,36 @@ function App() {
              <Route path="/chantiers" element={
 	        <ProtectedRoute>
 	          <AuthenticatedLayout>
-	            <Chantiers sites={sites} />
+	            <Chantiers sites={sites} user={user} />
 	          </AuthenticatedLayout>
 	        </ProtectedRoute>
 	      } />
 
 	      <Route path="/chantiers/add" element={
 	        <ProtectedRoute>
-	          <AuthenticatedLayout>
-	            <AddChantier />
-	          </AuthenticatedLayout>
+	          <AdminRoute user={user}>
+	            <AuthenticatedLayout>
+	              <AddChantier />
+	            </AuthenticatedLayout>
+	          </AdminRoute>
 	        </ProtectedRoute>
 	      } />
 
 	      <Route path="/materiel" element={
 	        <ProtectedRoute>
 	          <AuthenticatedLayout>
-	            <Materiel equipment={equipment} />
+	            <Materiel equipment={equipment} user={user} />
 	          </AuthenticatedLayout>
 	        </ProtectedRoute>
 	      } />
 
 	      <Route path="/materiel/add" element={
 	        <ProtectedRoute>
-	          <AuthenticatedLayout>
-	            <AddMateriel />
-	          </AuthenticatedLayout>
+	          <AdminRoute user={user}>
+	            <AuthenticatedLayout>
+	              <AddMateriel />
+	            </AuthenticatedLayout>
+	          </AdminRoute>
 	        </ProtectedRoute>
 	      } />
 

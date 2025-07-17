@@ -11,10 +11,36 @@ import {
   Settings,
   AlertTriangle,
   FileText,
-  Building2
+  Building2,
+  Loader2
 } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Function to create new materiel
+const createMateriel = async (materielData) => {
+  const token = localStorage.getItem('token');
+  const { data } = await axios.post('http://localhost:5000/api/materiel', materielData, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return data;
+};
 
 const AddMateriel = () => {
+  const navigate = useNavigate();
+  const [error, setError] = React.useState('');
+
+  const mutation = useMutation({
+    mutationFn: createMateriel,
+    onSuccess: () => {
+      navigate('/materiel'); // Redirect to materiel list on success
+    },
+    onError: (error) => {
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la création du matériel');
+    }
+  });
+
   const [formData, setFormData] = React.useState({
     name: '',
     type: '',
@@ -64,8 +90,8 @@ const AddMateriel = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // TODO: Add API call to save the equipment
+    setError('');
+    mutation.mutate(formData);
   };
 
   return (
@@ -74,7 +100,7 @@ const AddMateriel = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button 
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/materiel')}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -82,6 +108,13 @@ const AddMateriel = () => {
           <h2 className="text-2xl font-bold text-white">Nouveau Matériel</h2>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 space-y-10">
@@ -269,10 +302,20 @@ const AddMateriel = () => {
         <div className="flex justify-end pt-6 border-t border-gray-700/50">
           <button
             type="submit"
-            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-8 py-3 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg text-base font-semibold"
+            disabled={mutation.isPending}
+            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-8 py-3 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={20} />
-            <span>Enregistrer le Matériel</span>
+            {mutation.isPending ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                <span>Création en cours...</span>
+              </>
+            ) : (
+              <>
+                <Save size={20} />
+                <span>Enregistrer le Matériel</span>
+              </>
+            )}
           </button>
         </div>
       </form>

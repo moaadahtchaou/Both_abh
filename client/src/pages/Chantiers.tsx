@@ -76,7 +76,7 @@ const SiteCard = ({ site, onViewDetails, onEdit, onDelete }) => (
   </div>
 );
 
-const Chantiers = ({ sites }) => {
+const Chantiers = ({ sites, user }) => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const [searchTerm, setSearchTerm] = useState('');
@@ -184,13 +184,15 @@ const Chantiers = ({ sites }) => {
       <div className="bg-gray-800/50 border border-gray-700/50 p-6 rounded-2xl shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <h3 className="text-xl font-semibold text-gray-100">Gestion des Chantiers</h3>
-          <button 
-            onClick={() => navigate('/chantiers/add')}
-            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-4 py-2 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg"
-          >
-            <Plus size={18} />
-            <span>Nouveau Chantier</span>
-          </button>
+          {user?.role === 'Admin' && (
+            <button 
+              onClick={() => navigate('/chantiers/add')}
+              className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-4 py-2 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg"
+            >
+              <Plus size={18} />
+              <span>Nouveau Chantier</span>
+            </button>
+          )}
         </div>
 
         {/* Filters and Search */}

@@ -120,7 +120,7 @@ const EquipmentCard = ({ equipment, onViewDetails, onEdit, onDelete, onAssign })
   </div>
 );
 
-const Materiel = ({ equipment }) => {
+const Materiel = ({ equipment, user }) => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = React.useState('grid');
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -240,13 +240,15 @@ const Materiel = ({ equipment }) => {
       <div className="bg-gray-800/50 border border-gray-700/50 p-6 rounded-2xl shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <h3 className="text-xl font-semibold text-gray-100">Gestion du Matériel</h3>
-          <button 
-            onClick={() => navigate('/materiel/add')}
-            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-4 py-2 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg"
-          >
-            <Plus size={18} />
-            <span>Nouveau Matériel</span>
-          </button>
+          {user?.role === 'Admin' && (
+            <button 
+              onClick={() => navigate('/materiel/add')}
+              className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-4 py-2 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg"
+            >
+              <Plus size={18} />
+              <span>Nouveau Matériel</span>
+            </button>
+          )}
         </div>
 
         {/* Filters and Search */}
