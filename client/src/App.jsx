@@ -5,18 +5,18 @@ import Materiel from './pages/Materiel'
 import Rapports from './pages/RapportView'
 import Login from './pages/Login'
 import AddChantier from './pages/AddChantier'
+import EditChantier from './pages/EditChantier'
 import AddMateriel from './pages/AddMateriel'
+import EditMateriel from './pages/EditMateriel'
 import AddChef from './pages/AddChef'
 import Sidebar from './components/Layout/Sidebar'
 import Header from './components/Layout/Header'
 import AdminRoute from './components/auth/AdminRoute'
-import { initialSites, initialEquipment, recentActivities } from './store/db'
 import { useState } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import LoadingSpinner from './components/common/LoadingSpinner';
-
 
 // Function to fetch user data
 const fetchUser = async () => {
@@ -26,15 +26,11 @@ const fetchUser = async () => {
     const { data } = await axios.get('http://localhost:5000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
     });
-    console.log('Fetched user data:', data); // Add debug log
+    console.log('Fetched user data:', data);
     return data;
 };
 
-
 function App() {
-    const [sites] = useState(initialSites);
-    const [equipment] = useState(initialEquipment);
-    const [activities] = useState(recentActivities);
     const [isSidebarOpen, setSidebarOpen] = useState(true);
     const location = useLocation();
     const queryClient = useQueryClient();
@@ -42,12 +38,10 @@ function App() {
     const { data: user, isLoading, isError } = useQuery({
         queryKey: ['user'],
         queryFn: fetchUser,
-        enabled: !!localStorage.getItem('token'), // Only run if token exists
-        retry: 1, // Don't retry endlessly if token is invalid
-        staleTime: Infinity, // User data is considered fresh
+        enabled: !!localStorage.getItem('token'),
+        retry: 1,
+        staleTime: Infinity,
     });
-
-    console.log('Current user state:', user); // Add debug log
 
     // Get the current active view from the pathname
     const getActiveView = () => {
@@ -107,7 +101,7 @@ function App() {
             <Route path="/" element={
                 <ProtectedRoute>
                     <AuthenticatedLayout>
-                        <Dashboard user={user} sites={sites} equipment={equipment} activities={activities} />
+                        <Dashboard user={user} />
                     </AuthenticatedLayout>
                 </ProtectedRoute>
             } />
@@ -115,66 +109,84 @@ function App() {
             <Route path="/dashboard" element={
                 <ProtectedRoute>
                     <AuthenticatedLayout>
-                        <Dashboard user={user} sites={sites} equipment={equipment} activities={activities} />
+                        <Dashboard user={user} />
                     </AuthenticatedLayout>
                 </ProtectedRoute>
             } />
-            {/* ... other routes */}
-             <Route path="/chantiers" element={
-	        <ProtectedRoute>
-	          <AuthenticatedLayout>
-	            <Chantiers sites={sites} user={user} />
-	          </AuthenticatedLayout>
-	        </ProtectedRoute>
-	      } />
 
-	      <Route path="/chantiers/add" element={
-	        <ProtectedRoute>
-	          <AdminRoute user={user}>
-	            <AuthenticatedLayout>
-	              <AddChantier />
-	            </AuthenticatedLayout>
-	          </AdminRoute>
-	        </ProtectedRoute>
-	      } />
+            <Route path="/chantiers" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <Chantiers user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
 
-	      <Route path="/materiel" element={
-	        <ProtectedRoute>
-	          <AuthenticatedLayout>
-	            <Materiel equipment={equipment} user={user} />
-	          </AuthenticatedLayout>
-	        </ProtectedRoute>
-	      } />
+            <Route path="/chantiers/add" element={
+                <ProtectedRoute>
+                    <AdminRoute user={user}>
+                        <AuthenticatedLayout>
+                            <AddChantier />
+                        </AuthenticatedLayout>
+                    </AdminRoute>
+                </ProtectedRoute>
+            } />
 
-	      <Route path="/materiel/add" element={
-	        <ProtectedRoute>
-	          <AdminRoute user={user}>
-	            <AuthenticatedLayout>
-	              <AddMateriel />
-	            </AuthenticatedLayout>
-	          </AdminRoute>
-	        </ProtectedRoute>
-	      } />
+            <Route path="/chantiers/edit/:id" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <EditChantier user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
 
-	      <Route path="/rapports" element={
-	        <ProtectedRoute>
-	          <AuthenticatedLayout>
-	            <Rapports />
-	          </AuthenticatedLayout>
-	        </ProtectedRoute>
-	      } />
+            <Route path="/materiel" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <Materiel user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
 
-	      <Route path="/chefs/add" element={
-	        <ProtectedRoute>
-	          <AdminRoute user={user}>
-	            <AuthenticatedLayout>
-	              <AddChef />
-	            </AuthenticatedLayout>
-	          </AdminRoute>
-	        </ProtectedRoute>
-	      } />
+            <Route path="/materiel/add" element={
+                <ProtectedRoute>
+                    <AdminRoute user={user}>
+                        <AuthenticatedLayout>
+                            <AddMateriel />
+                        </AuthenticatedLayout>
+                    </AdminRoute>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/materiel/edit/:id" element={
+                <ProtectedRoute>
+                    <AdminRoute user={user}>
+                        <AuthenticatedLayout>
+                            <EditMateriel user={user} />
+                        </AuthenticatedLayout>
+                    </AdminRoute>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/rapports" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <Rapports />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/chefs/add" element={
+                <ProtectedRoute>
+                    <AdminRoute user={user}>
+                        <AuthenticatedLayout>
+                            <AddChef />
+                        </AuthenticatedLayout>
+                    </AdminRoute>
+                </ProtectedRoute>
+            } />
         </Routes>
     );
 }
 
-export default App
+export default App;

@@ -18,6 +18,8 @@ import {
     BarChart3
 } from "lucide-react";
 import StatusChip from "../components/common/StatusChip";
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const SiteProgressBar = ({ progress }) => (
   <div className="w-full bg-gray-600 rounded-full h-2.5">
@@ -56,7 +58,7 @@ const EquipmentCard = ({ equipment, onViewDetails, onEdit, onDelete, onAssign })
           <h4 className="font-semibold text-gray-100 text-lg">{equipment.name}</h4>
           <div className="flex items-center text-sm text-gray-400 mt-1">
             <span className="font-mono text-xs bg-gray-700/50 px-2 py-1 rounded">
-              {equipment.id}
+              {equipment.identifier}
             </span>
             <span className="ml-2">{equipment.type}</span>
           </div>
@@ -67,17 +69,17 @@ const EquipmentCard = ({ equipment, onViewDetails, onEdit, onDelete, onAssign })
     
     <div className="space-y-3 mb-4">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-400">Chantier assigné</span>
+        <span className="text-gray-400">Site actuel</span>
         <span className="text-gray-300 font-medium text-right">
-          {equipment.assignedSite !== 'N/A' ? equipment.assignedSite : 'Non assigné'}
+          {equipment.location?.currentSite?.name || 'Non assigné'}
         </span>
       </div>
       
-      {equipment.maintenanceDate && (
+      {equipment.maintenance?.nextMaintenanceDate && (
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-400">Prochaine maintenance</span>
           <span className="text-yellow-400 font-medium">
-            {new Date(equipment.maintenanceDate).toLocaleDateString('fr-FR')}
+            {new Date(equipment.maintenance.nextMaintenanceDate).toLocaleDateString('fr-FR')}
           </span>
         </div>
       )}
@@ -120,22 +122,44 @@ const EquipmentCard = ({ equipment, onViewDetails, onEdit, onDelete, onAssign })
   </div>
 );
 
-const Materiel = ({ equipment, user }) => {
+const Materiel = ({ user }) => {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = React.useState('grid');
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('all');
-  const [typeFilter, setTypeFilter] = React.useState('all');
-  const [sortBy, setSortBy] = React.useState('name');
+  const [viewMode, setViewMode] = useState('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [materiel, setMateriel] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Get unique types for filter
-  const equipmentTypes = [...new Set(equipment.map(item => item.type))];
+  useEffect(() => {
+    const fetchMateriel = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/materiel', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMateriel(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching materiel:', err);
+        setError('Erreur lors de la récupération du matériel');
+        setLoading(false);
+      }
+    };
+
+    fetchMateriel();
+  }, []);
+
+  // Get unique types for filter from actual data
+  const equipmentTypes = [...new Set(materiel.map(item => item.type))];
 
   // Filter and sort equipment
-  const filteredEquipment = equipment
+  const filteredEquipment = materiel
     .filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.identifier.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.type.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
       const matchesType = typeFilter === 'all' || item.type === typeFilter;
@@ -149,8 +173,8 @@ const Materiel = ({ equipment, user }) => {
           return a.type.localeCompare(b.type);
         case 'status':
           return a.status.localeCompare(b.status);
-        case 'id':
-          return a.id.localeCompare(b.id);
+        case 'identifier':
+          return a.identifier.localeCompare(b.identifier);
         default:
           return 0;
       }
@@ -161,11 +185,22 @@ const Materiel = ({ equipment, user }) => {
   };
 
   const handleEdit = (equipment) => {
-    console.log('Edit equipment:', equipment);
+    navigate(`/materiel/edit/${equipment._id}`);
   };
 
-  const handleDelete = (equipment) => {
-    console.log('Delete equipment:', equipment);
+  const handleDelete = async (equipment) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet équipement ?')) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/materiel/${equipment._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMateriel(materiel.filter(m => m._id !== equipment._id));
+      } catch (err) {
+        console.error('Error deleting equipment:', err);
+        alert('Erreur lors de la suppression de l\'équipement');
+      }
+    }
   };
 
   const handleAssign = (equipment) => {
@@ -174,14 +209,30 @@ const Materiel = ({ equipment, user }) => {
 
   const getStatusCounts = () => {
     return {
-      total: equipment.length,
-      available: equipment.filter(e => e.status === 'Disponible').length,
-      inUse: equipment.filter(e => e.status === 'En utilisation').length,
-      maintenance: equipment.filter(e => e.status === 'En maintenance').length,
+      total: materiel.length,
+      available: materiel.filter(e => e.status === 'Disponible').length,
+      inUse: materiel.filter(e => e.status === 'En utilisation').length,
+      maintenance: materiel.filter(e => e.status === 'En maintenance').length,
     };
   };
 
   const statusCounts = getStatusCounts();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sky-400"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -295,7 +346,7 @@ const Materiel = ({ equipment, user }) => {
               <option value="name">Nom</option>
               <option value="type">Type</option>
               <option value="status">Statut</option>
-              <option value="id">ID</option>
+              <option value="identifier">ID</option>
             </select>
             
             <div className="flex bg-gray-700 rounded-lg p-1">
@@ -320,7 +371,7 @@ const Materiel = ({ equipment, user }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEquipment.map(item => (
               <EquipmentCard 
-                key={item.id} 
+                key={item._id} 
                 equipment={item} 
                 onViewDetails={handleViewDetails}
                 onEdit={handleEdit}
@@ -345,8 +396,8 @@ const Materiel = ({ equipment, user }) => {
               </thead>
               <tbody>
                 {filteredEquipment.map(item => (
-                  <tr key={item.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td className="px-6 py-4 font-mono text-xs text-gray-500">{item.id}</td>
+                  <tr key={item._id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="px-6 py-4 font-mono text-xs text-gray-500">{item.identifier}</td>
                     <td className="px-6 py-4 font-medium text-gray-200">
                       <div className="flex items-center space-x-2">
                         {getEquipmentIcon(item.type)}
@@ -355,11 +406,11 @@ const Materiel = ({ equipment, user }) => {
                     </td>
                     <td className="px-6 py-4">{item.type}</td>
                     <td className="px-6 py-4"><StatusChip status={item.status} /></td>
-                    <td className="px-6 py-4">{item.assignedSite || 'Non assigné'}</td>
+                    <td className="px-6 py-4">{item.location?.currentSite?.name || 'Non assigné'}</td>
                     <td className="px-6 py-4">
-                      {item.maintenanceDate ? (
+                      {item.maintenance?.nextMaintenanceDate ? (
                         <span className="text-yellow-400">
-                          {new Date(item.maintenanceDate).toLocaleDateString('fr-FR')}
+                          {new Date(item.maintenance.nextMaintenanceDate).toLocaleDateString('fr-FR')}
                         </span>
                       ) : (
                         <span className="text-gray-500">Non planifiée</span>

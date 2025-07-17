@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const authRoutes = require('./auth');
 const { router: protectedRoutes } = require('./protected');
-const userRoutes = require('./user');
+const userRoutes = require('./routes/users'); // Updated path
 const chantierRoutes = require('./chantier');
 const materielRoutes = require('./materiel');
 
@@ -53,7 +53,7 @@ mongoose.connect(process.env.MONGO_URI) // Changed from MONGODB_URI to MONGO_URI
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api', userRoutes);
+app.use('/api/users', userRoutes); // Updated route path
 app.use('/api', chantierRoutes);
 app.use('/api', materielRoutes);
 

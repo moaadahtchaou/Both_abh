@@ -1,8 +1,41 @@
 import React from 'react';
 import { HardHat, MapPin, Calendar, TrendingUp, Eye, Edit, Trash2, Filter, Search, Plus, BarChart3 } from "lucide-react";
 import StatusChip from "../components/common/StatusChip";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+interface Location {
+  address: string;
+  city: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+interface Chantier {
+  _id: string;
+  name: string;
+  location: Location;
+  status: string;
+  progress: number;
+  startDate: string;
+  estimatedEndDate: string;
+  chefResponsable?: {
+    name: string;
+    email: string;
+  };
+}
+
+interface User {
+  id: string;
+  role: string;
+}
+
+interface ChantierProps {
+  user: User;
+}
 
 const SiteProgressBar = ({ progress }) => (
   <div className="w-full bg-gray-600 rounded-full h-2.5">
@@ -13,82 +46,114 @@ const SiteProgressBar = ({ progress }) => (
   </div>
 );
 
-const SiteCard = ({ site, onViewDetails, onEdit, onDelete }) => (
-  <div className="bg-gray-800/60 border border-gray-700/50 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:border-gray-600/50">
-    <div className="flex justify-between items-start mb-4">
-      <div className="flex items-center space-x-3">
-        <div className="p-2 bg-sky-900/50 rounded-lg">
-          <HardHat className="text-sky-400" size={20} />
-        </div>
-        <div>
-          <h4 className="font-semibold text-gray-100 text-lg">{site.name}</h4>
-          <div className="flex items-center text-sm text-gray-400 mt-1">
-            <MapPin size={14} className="mr-1" />
-            {site.location}
+const SiteCard = ({ site, onViewDetails, onEdit, onDelete, user }) => {
+  // Check if user has permission to modify this chantier
+  const canModify = user.role === 'Admin' || (site.chefResponsable && site.chefResponsable._id === user.id);
+
+  return (
+    <div className="bg-gray-800/60 border border-gray-700/50 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:border-gray-600/50">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-sky-900/50 rounded-lg">
+            <HardHat className="text-sky-400" size={20} />
+          </div>
+          <div>
+            <h4 className="font-semibold text-gray-100 text-lg">{site.name}</h4>
+            <div className="flex items-center text-sm text-gray-400 mt-1">
+              <MapPin size={14} className="mr-1" />
+              {site.location.city}
+            </div>
           </div>
         </div>
+        <StatusChip status={site.status} />
       </div>
-      <StatusChip status={site.status} />
-    </div>
-    
-    <div className="space-y-3 mb-4">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-400">Progression</span>
-        <span className="text-gray-300 font-medium">{site.progress}%</span>
-      </div>
-      <SiteProgressBar progress={site.progress} />
       
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center text-gray-400">
-          <Calendar size={14} className="mr-1" />
-          Début: {new Date(site.startDate).toLocaleDateString('fr-FR')}
+      <div className="space-y-3 mb-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-400">Progression</span>
+          <span className="text-gray-300 font-medium">{site.progress}%</span>
         </div>
-        <div className="flex items-center text-gray-400">
-          <Calendar size={14} className="mr-1" />
-          Fin: {new Date(site.endDate).toLocaleDateString('fr-FR')}
+        <SiteProgressBar progress={site.progress} />
+        
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center text-gray-400">
+            <Calendar size={14} className="mr-1" />
+            Début: {new Date(site.startDate).toLocaleDateString('fr-FR')}
+          </div>
+          <div className="flex items-center text-gray-400">
+            <Calendar size={14} className="mr-1" />
+            Fin: {new Date(site.estimatedEndDate).toLocaleDateString('fr-FR')}
+          </div>
+        </div>
+        <div className="text-sm text-gray-400">
+          Chef: {site.chefResponsable?.name || 'Non assigné'}
         </div>
       </div>
-    </div>
-    
-    <div className="flex justify-between items-center pt-4 border-t border-gray-700/50">
-      <button 
-        onClick={() => onViewDetails(site)}
-        className="flex items-center space-x-2 text-sky-400 hover:text-sky-300 transition-colors"
-      >
-        <Eye size={16} />
-        <span className="text-sm">Détails</span>
-      </button>
-      <div className="flex space-x-2">
+      
+      <div className="flex justify-between items-center pt-4 border-t border-gray-700/50">
         <button 
-          onClick={() => onEdit(site)}
-          className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors"
+          onClick={() => onViewDetails(site)}
+          className="flex items-center space-x-2 text-sky-400 hover:text-sky-300 transition-colors"
         >
-          <Edit size={16} />
+          <Eye size={16} />
+          <span className="text-sm">Détails</span>
         </button>
-        <button 
-          onClick={() => onDelete(site)}
-          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-        >
-          <Trash2 size={16} />
-        </button>
+        {canModify && (
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => onEdit(site)}
+              className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors"
+            >
+              <Edit size={16} />
+            </button>
+            <button 
+              onClick={() => onDelete(site)}
+              className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const Chantiers = ({ sites, user }) => {
+const Chantiers: React.FC<ChantierProps> = ({ user }) => {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
+  const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  const [chantiers, setChantiers] = useState<Chantier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter and sort sites
-  const filteredSites = sites
-    .filter(site => {
-      const matchesSearch = site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          site.location.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || site.status === statusFilter;
+  useEffect(() => {
+    const fetchChantiers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/chantiers', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setChantiers(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching chantiers:', err);
+        setError('Erreur lors de la récupération des chantiers');
+        setLoading(false);
+      }
+    };
+
+    fetchChantiers();
+  }, []);
+
+  // Filter and sort chantiers
+  const filteredChantiers = chantiers
+    .filter(chantier => {
+      const matchesSearch = chantier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          chantier.location.city.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || chantier.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
@@ -104,28 +169,55 @@ const Chantiers = ({ sites, user }) => {
       }
     });
 
-  const handleViewDetails = (site) => {
-    console.log('View details for:', site);
+  const handleViewDetails = (chantier) => {
+    console.log('View details for:', chantier);
   };
 
-  const handleEdit = (site) => {
-    console.log('Edit site:', site);
+  const handleEdit = (chantier) => {
+    navigate(`/chantiers/edit/${chantier._id}`);
   };
 
-  const handleDelete = (site) => {
-    console.log('Delete site:', site);
+  const handleDelete = async (chantier) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce chantier ?')) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/chantiers/${chantier._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setChantiers(chantiers.filter(c => c._id !== chantier._id));
+      } catch (err) {
+        console.error('Error deleting chantier:', err);
+        alert('Erreur lors de la suppression du chantier');
+      }
+    }
   };
 
   const getStatusCounts = () => {
     return {
-      total: sites.length,
-      enCours: sites.filter(s => s.status === 'En cours').length,
-      termine: sites.filter(s => s.status === 'Terminé').length,
-      enAttente: sites.filter(s => s.status === 'En attente').length,
+      total: chantiers.length,
+      enCours: chantiers.filter(s => s.status === 'En cours').length,
+      termine: chantiers.filter(s => s.status === 'Terminé').length,
+      enAttente: chantiers.filter(s => s.status === 'Planifié').length,
     };
   };
 
   const statusCounts = getStatusCounts();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sky-400"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -250,13 +342,14 @@ const Chantiers = ({ sites, user }) => {
         {/* Content based on view mode */}
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSites.map(site => (
+            {filteredChantiers.map(site => (
               <SiteCard 
-                key={site.id} 
+                key={site._id} 
                 site={site} 
                 onViewDetails={handleViewDetails}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                user={user}
               />
             ))}
           </div>
@@ -275,10 +368,10 @@ const Chantiers = ({ sites, user }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredSites.map(site => (
-                  <tr key={site.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                {filteredChantiers.map(site => (
+                  <tr key={site._id} className="border-b border-gray-700 hover:bg-gray-700/50">
                     <td className="px-6 py-4 font-medium text-gray-200">{site.name}</td>
-                    <td className="px-6 py-4">{site.location}</td>
+                    <td className="px-6 py-4">{site.location.city}</td>
                     <td className="px-6 py-4"><StatusChip status={site.status} /></td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
@@ -287,7 +380,7 @@ const Chantiers = ({ sites, user }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">{new Date(site.startDate).toLocaleDateString('fr-FR')}</td>
-                    <td className="px-6 py-4">{new Date(site.endDate).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-6 py-4">{new Date(site.estimatedEndDate).toLocaleDateString('fr-FR')}</td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
                         <button 
@@ -317,7 +410,7 @@ const Chantiers = ({ sites, user }) => {
           </div>
         )}
 
-        {filteredSites.length === 0 && (
+        {filteredChantiers.length === 0 && (
           <div className="text-center py-12">
             <HardHat className="mx-auto text-gray-500 mb-4" size={48} />
             <p className="text-gray-400">Aucun chantier trouvé</p>

@@ -13,9 +13,10 @@ import {
   ClipboardList,
   DollarSign,
   Info,
-  Loader2
+  Loader2,
+  HardHat
 } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -28,9 +29,31 @@ const createChantier = async (chantierData) => {
   return data;
 };
 
+// Function to fetch chefs
+const fetchChefs = async () => {
+  const token = localStorage.getItem('token');
+  const { data } = await axios.get('http://localhost:5000/api/users/chefs', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  console.log('Fetched chefs:', data); // Debug log
+  return data;
+};
+
 const AddChantier = () => {
   const navigate = useNavigate();
   const [error, setError] = React.useState('');
+
+  // Query to fetch chefs
+  const { data: chefs = [], isLoading: chefsLoading } = useQuery({
+    queryKey: ['chefs'],
+    queryFn: fetchChefs,
+    onError: (error) => {
+      console.error('Error fetching chefs:', error);
+      setError('Erreur lors de la récupération des chefs');
+    }
+  });
+
+  console.log('Chefs in component:', chefs); // Debug log
 
   const mutation = useMutation({
     mutationFn: createChantier,
@@ -62,6 +85,7 @@ const AddChantier = () => {
         estimated: '',
     },
     description: '',
+    chefResponsable: '',
     assignedTeam: [],
     documents: [],
     notes: [],
@@ -132,9 +156,19 @@ const AddChantier = () => {
               <div className="md:col-span-2">
                 <InputField icon={<MapPin />} label="Adresse" name="location.address" value={formData.location.address} onChange={handleChange} placeholder="ex: 123 Rue Principale" required />
               </div>
+              <SelectField 
+                icon={<HardHat />} 
+                label="Chef Responsable" 
+                name="chefResponsable" 
+                value={formData.chefResponsable} 
+                onChange={handleChange} 
+                options={chefs.map(chef => ({ value: chef._id, label: chef.name }))}
+                isLoading={chefsLoading}
+                required 
+              />
               <InputField icon={<Calendar />} label="Date de début" name="startDate" type="date" value={formData.startDate} onChange={handleChange} required />
               <InputField icon={<Calendar />} label="Date de fin estimée" name="estimatedEndDate" type="date" value={formData.estimatedEndDate} onChange={handleChange} required />
-              <SelectField icon={<Info />} label="Statut" name="status" value={formData.status} onChange={handleChange} options={['Planifié', 'En cours', 'Terminé', 'En pause']} />
+              <SelectField icon={<Info />} label="Statut" name="status" value={formData.status} onChange={handleChange} options={['Planifié', 'En cours', 'Terminé', 'En pause'].map(status => ({ value: status, label: status }))} />
               <InputField icon={<DollarSign />} label="Budget Estimé (€)" name="budget.estimated" type="number" value={formData.budget.estimated} onChange={handleChange} placeholder="ex: 50000" required />
             </div>
         </div>
@@ -204,7 +238,7 @@ const InputField = ({ icon, label, ...props }) => (
     </div>
 );
 
-const SelectField = ({ icon, label, options, ...props }) => (
+const SelectField = ({ icon, label, options, isLoading, ...props }) => (
     <div className="space-y-2">
         <label htmlFor={props.name} className="text-sm font-medium text-gray-300">{label}</label>
         <div className="relative">
@@ -212,9 +246,15 @@ const SelectField = ({ icon, label, options, ...props }) => (
             <select
                 id={props.name}
                 {...props}
-                className="w-full appearance-none bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+                className="w-full appearance-none bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all disabled:opacity-50"
+                disabled={isLoading}
             >
-                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                <option value="">Sélectionner {label}</option>
+                {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                    </option>
+                ))}
             </select>
         </div>
     </div>

@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Wrench,
   Calendar,
-  Truck,
   Info,
   DollarSign,
   ClipboardList,
@@ -16,13 +15,13 @@ import {
   MapPin
 } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 
-// Function to create new materiel
-const createMateriel = async (materielData) => {
+// Function to fetch materiel details
+const fetchMateriel = async (id) => {
   const token = localStorage.getItem('token');
-  const { data } = await axios.post('http://localhost:5000/api/materiel', materielData, {
+  const { data } = await axios.get(`http://localhost:5000/api/materiel/${id}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return data;
@@ -37,9 +36,29 @@ const fetchChantiers = async () => {
   return data;
 };
 
-const AddMateriel = () => {
+// Function to update materiel
+const updateMateriel = async ({ id, data }) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.put(`http://localhost:5000/api/materiel/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+const EditMateriel = ({ user }) => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [error, setError] = React.useState('');
+
+  // Query to fetch materiel details
+  const { data: materiel, isLoading: materielLoading } = useQuery({
+    queryKey: ['materiel', id],
+    queryFn: () => fetchMateriel(id),
+    onError: (error) => {
+      console.error('Error fetching materiel:', error);
+      setError('Erreur lors de la récupération du matériel');
+    }
+  });
 
   // Query to fetch chantiers
   const { data: chantiers = [], isLoading: chantiersLoading } = useQuery({
@@ -52,12 +71,12 @@ const AddMateriel = () => {
   });
 
   const mutation = useMutation({
-    mutationFn: createMateriel,
+    mutationFn: updateMateriel,
     onSuccess: () => {
       navigate('/materiel');
     },
     onError: (error) => {
-      setError(error.response?.data?.message || 'Une erreur est survenue lors de la création du matériel');
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la mise à jour du matériel');
     }
   });
 
@@ -66,101 +85,60 @@ const AddMateriel = () => {
     type: '',
     status: 'Disponible',
     identifier: '',
-    specifications: {
-      brand: '',  // manufacturer will map to this
-      model: '',
-      serialNumber: '',
-      year: '',
-      capacity: '',
-      power: ''
+    serialNumber: '',
+    manufacturer: '',
+    model: '',
+    purchaseDate: '',
+    lastMaintenanceDate: '',
+    nextMaintenanceDate: '',
+    cost: {
+      purchase: '',
+      maintenance: ''
     },
-    maintenance: {
-      lastMaintenance: '',  // lastMaintenanceDate will map to this
-      nextMaintenanceDate: '',
-      maintenanceHistory: []
-    },
-    acquisition: {
-      purchaseDate: '',
-      purchasePrice: '',  // cost.purchase will map to this
-      supplier: {
-        name: '',
-        contact: ''
-      }
-    },
+    specifications: '',
     location: {
       currentSite: '',
-      specificLocation: '',
-      assignedTo: null
+      specificLocation: ''
     },
+    condition: 'Neuf',
+    documents: [],
+    maintenanceHistory: [],
     notes: [],
-    noteText: '' // Temporary field for note input
+    noteText: ''
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Generate a unique identifier if not provided
-    if (!formData.identifier) {
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 8);
-      formData.identifier = `MAT-${timestamp}-${randomStr}`;
-    }
-
-    // Create a clean copy of the data
-    const dataToSubmit = {
-      ...formData,
-      specifications: {
-        ...formData.specifications,
-        brand: formData.specifications.brand?.trim() || '',
-        model: formData.specifications.model?.trim() || '',
-        serialNumber: formData.specifications.serialNumber?.trim() || ''
-      },
-      acquisition: {
-        purchaseDate: formData.acquisition.purchaseDate || null,
-        purchasePrice: formData.acquisition.purchasePrice ? Number(formData.acquisition.purchasePrice) : 0,
-        supplier: {
-          name: '',
-          contact: ''
+  // Update form data when materiel data is loaded
+  React.useEffect(() => {
+    if (materiel) {
+      setFormData({
+        ...materiel,
+        noteText: materiel.notes?.[0]?.text || '',
+        specifications: {
+          brand: materiel.specifications?.brand || '',
+          model: materiel.specifications?.model || '',
+          serialNumber: materiel.specifications?.serialNumber || '',
+          year: materiel.specifications?.year || '',
+          capacity: materiel.specifications?.capacity || '',
+          power: materiel.specifications?.power || ''
+        },
+        acquisition: {
+          purchaseDate: materiel.acquisition?.purchaseDate?.split('T')[0] || '',
+          purchasePrice: materiel.acquisition?.purchasePrice || '',
+          supplier: materiel.acquisition?.supplier || { name: '', contact: '' }
+        },
+        maintenance: {
+          lastMaintenance: materiel.maintenance?.lastMaintenance?.split('T')[0] || '',
+          nextMaintenanceDate: materiel.maintenance?.nextMaintenanceDate?.split('T')[0] || '',
+          maintenanceHistory: materiel.maintenance?.maintenanceHistory || []
+        },
+        location: {
+          currentSite: materiel.location?.currentSite?._id || '',
+          specificLocation: materiel.location?.specificLocation || '',
+          assignedTo: materiel.location?.assignedTo || null
         }
-      },
-      maintenance: {
-        lastMaintenance: formData.maintenance.lastMaintenance || null,
-        nextMaintenanceDate: formData.maintenance.nextMaintenanceDate || null,
-        maintenanceHistory: []
-      },
-      location: {
-        currentSite: formData.location.currentSite || null,
-        assignedTo: null
-      }
-    };
-    
-    // Add note if there's text
-    if (formData.noteText.trim()) {
-      dataToSubmit.notes = [{
-        text: formData.noteText.trim(),
-        createdAt: new Date()
-      }];
+      });
     }
-
-    // Remove temporary fields
-    delete dataToSubmit.noteText;
-    delete dataToSubmit.manufacturer;
-    delete dataToSubmit.model;
-    delete dataToSubmit.cost;
-    delete dataToSubmit.lastMaintenanceDate;
-
-    // Validate required fields
-    if (!dataToSubmit.specifications.brand || !dataToSubmit.specifications.model || !dataToSubmit.acquisition.purchaseDate) {
-      setError('Veuillez remplir tous les champs obligatoires (Fabricant, Modèle, Date d\'achat)');
-      return;
-    }
-
-    // Log the data being sent
-    console.log('Submitting data:', dataToSubmit);
-
-    mutation.mutate(dataToSubmit);
-  };
+  }, [materiel]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -174,21 +152,22 @@ const AddMateriel = () => {
       return;
     }
 
-    // Special handling for chantier selection to update status
+    // Special handling for chantier selection
     if (name === 'location.currentSite') {
       setFormData(prev => ({
         ...prev,
         location: {
           ...prev.location,
-          currentSite: value
+          currentSite: value || null,  // Convert empty string to null
+          specificLocation: value ? prev.location.specificLocation : ''  // Clear specific location if no site
         },
-        status: value ? 'En utilisation' : 'Disponible'
+        status: value ? 'En utilisation' : 'Disponible'  // Update status based on site selection
       }));
       return;
     }
-
-    // Handle nested fields
+    
     const keys = name.split('.');
+    
     if (keys.length > 1) {
       setFormData(prev => {
         const newState = { ...prev };
@@ -208,6 +187,62 @@ const AddMateriel = () => {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const dataToSubmit = {
+      ...formData,
+      location: {
+        ...formData.location,
+        currentSite: formData.location.currentSite || null,  // Ensure null for empty site
+        specificLocation: formData.location.specificLocation || ''
+      }
+    };
+
+    // Add note if there's text
+    if (formData.noteText.trim()) {
+      dataToSubmit.notes = [{
+        text: formData.noteText.trim(),
+        createdAt: new Date()
+      }];
+    }
+
+    // Remove temporary fields
+    delete dataToSubmit.noteText;
+    delete dataToSubmit._id;
+    delete dataToSubmit.__v;
+    delete dataToSubmit.createdAt;
+    delete dataToSubmit.updatedAt;
+
+    console.log('Submitting data:', dataToSubmit);  // Debug log
+    mutation.mutate({ id, data: dataToSubmit });
+  };
+
+  if (materielLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sky-400"></div>
+      </div>
+    );
+  }
+
+  // Check if user has permission to edit
+  if (user.role !== 'Admin') {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="text-red-500 text-xl mb-4">Accès refusé</div>
+        <p className="text-gray-400 mb-6">Vous n'avez pas les permissions nécessaires pour modifier ce matériel.</p>
+        <button
+          onClick={() => navigate('/materiel')}
+          className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+        >
+          Retour au Matériel
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -219,7 +254,7 @@ const AddMateriel = () => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h2 className="text-2xl font-bold text-white">Nouveau Matériel</h2>
+          <h2 className="text-2xl font-bold text-white">Modifier le Matériel</h2>
         </div>
       </div>
 
@@ -255,7 +290,7 @@ const AddMateriel = () => {
               name="identifier" 
               value={formData.identifier} 
               onChange={handleChange} 
-              placeholder="ex: MAT-001 (généré automatiquement si vide)" 
+              disabled
             />
             <SelectField 
               icon={<Wrench />} 
@@ -281,7 +316,7 @@ const AddMateriel = () => {
               value={formData.status} 
               onChange={handleChange} 
               options={['Disponible', 'En utilisation', 'En maintenance', 'Hors service']} 
-              disabled={formData.location.currentSite !== ''} // Disable if assigned to chantier
+              disabled={formData.location.currentSite !== ''} 
               required 
             />
           </div>
@@ -298,7 +333,7 @@ const AddMateriel = () => {
               icon={<Building2 />} 
               label="Fabricant" 
               name="specifications.brand" 
-              value={formData.specifications.brand} 
+              value={formData.specifications?.brand || ''} 
               onChange={handleChange} 
               placeholder="ex: Caterpillar" 
               required 
@@ -307,7 +342,7 @@ const AddMateriel = () => {
               icon={<Settings />} 
               label="Modèle" 
               name="specifications.model" 
-              value={formData.specifications.model} 
+              value={formData.specifications?.model || ''} 
               onChange={handleChange} 
               placeholder="ex: CAT-320" 
               required 
@@ -317,7 +352,7 @@ const AddMateriel = () => {
               label="Date d'achat" 
               name="acquisition.purchaseDate" 
               type="date" 
-              value={formData.acquisition.purchaseDate} 
+              value={formData.acquisition?.purchaseDate || ''} 
               onChange={handleChange} 
               required 
             />
@@ -326,7 +361,7 @@ const AddMateriel = () => {
               label="Coût d'achat (€)" 
               name="acquisition.purchasePrice" 
               type="number" 
-              value={formData.acquisition.purchasePrice} 
+              value={formData.acquisition?.purchasePrice || ''} 
               onChange={handleChange} 
               placeholder="ex: 50000" 
               required 
@@ -346,7 +381,7 @@ const AddMateriel = () => {
               label="Dernière maintenance" 
               name="maintenance.lastMaintenance" 
               type="date" 
-              value={formData.maintenance.lastMaintenance} 
+              value={formData.maintenance?.lastMaintenance || ''} 
               onChange={handleChange} 
             />
             <InputField 
@@ -354,7 +389,7 @@ const AddMateriel = () => {
               label="Prochaine maintenance" 
               name="maintenance.nextMaintenanceDate" 
               type="date" 
-              value={formData.maintenance.nextMaintenanceDate} 
+              value={formData.maintenance?.nextMaintenanceDate || ''} 
               onChange={handleChange} 
             />
           </div>
@@ -371,16 +406,22 @@ const AddMateriel = () => {
               icon={<Building2 />} 
               label="Chantier (optionnel)" 
               name="location.currentSite" 
-              value={formData.location.currentSite} 
+              value={formData.location?.currentSite || ''} 
               onChange={handleChange} 
-              options={chantiers.map(chantier => ({ value: chantier._id, label: chantier.name }))}
+              options={[
+                { value: '', label: 'Aucun chantier' },
+                ...chantiers.map(chantier => ({ 
+                  value: chantier._id, 
+                  label: chantier.name 
+                }))
+              ]}
               isLoading={chantiersLoading}
             />
             <InputField 
               icon={<MapPin />} 
               label="Emplacement spécifique" 
               name="location.specificLocation" 
-              value={formData.location.specificLocation} 
+              value={formData.location?.specificLocation || ''} 
               onChange={handleChange} 
               placeholder="ex: Zone de stockage nord" 
             />
@@ -414,12 +455,12 @@ const AddMateriel = () => {
             {mutation.isPending ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                <span>Création en cours...</span>
+                <span>Mise à jour en cours...</span>
               </>
             ) : (
               <>
                 <Save size={20} />
-                <span>Créer le Matériel</span>
+                <span>Enregistrer les Modifications</span>
               </>
             )}
           </button>
@@ -438,7 +479,9 @@ const InputField = ({ icon, label, ...props }) => (
       <input
         id={props.name}
         {...props}
-        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+        className={`w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all ${
+          props.disabled ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       />
     </div>
   </div>
@@ -452,9 +495,9 @@ const SelectField = ({ icon, label, options, isLoading, ...props }) => (
       <select
         id={props.name}
         {...props}
-        disabled={isLoading}
+        disabled={isLoading || props.disabled}
         className={`w-full appearance-none bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all ${
-          isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          (isLoading || props.disabled) ? 'opacity-50 cursor-not-allowed' : ''
         }`}
       >
         <option value="">Sélectionner {label}</option>
@@ -483,4 +526,4 @@ const TextareaField = ({ label, ...props }) => (
   </div>
 );
 
-export default AddMateriel;
+export default EditMateriel; 

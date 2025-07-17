@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User'); // Import the User model
-const { authMiddleware } = require('./protected'); // Fix the import
+const { authMiddleware } = require('./protected');
 const router = express.Router();
 
 // User registration
