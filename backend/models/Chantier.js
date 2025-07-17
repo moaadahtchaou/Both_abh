@@ -6,6 +6,16 @@ const ChantierSchema = new mongoose.Schema({
         required: [true, 'Please provide a site name'],
         trim: true
     },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Creator is required']
+    },
+    chefResponsable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Chef responsable is required']
+    },
     location: {
         address: {
             type: String,

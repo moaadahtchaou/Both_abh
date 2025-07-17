@@ -13,7 +13,13 @@ router.post('/materiel', authMiddleware, async (req, res) => {
             });
         }
 
-        const materiel = await Materiel.create(req.body);
+        // Add creator information to the request body
+        const materielData = {
+            ...req.body,
+            createdBy: req.user.id
+        };
+
+        const materiel = await Materiel.create(materielData);
         res.status(201).json(materiel);
     } catch (error) {
         console.error('Error creating materiel:', error);
@@ -28,6 +34,7 @@ router.post('/materiel', authMiddleware, async (req, res) => {
 router.get('/materiel', authMiddleware, async (req, res) => {
     try {
         const materiel = await Materiel.find()
+            .populate('createdBy', 'name email')
             .populate('location.currentSite', 'name')
             .populate('location.assignedTo', 'name');
         res.json(materiel);
@@ -44,6 +51,7 @@ router.get('/materiel', authMiddleware, async (req, res) => {
 router.get('/materiel/:id', authMiddleware, async (req, res) => {
     try {
         const materiel = await Materiel.findById(req.params.id)
+            .populate('createdBy', 'name email')
             .populate('location.currentSite', 'name')
             .populate('location.assignedTo', 'name');
         if (!materiel) {

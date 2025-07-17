@@ -13,7 +13,13 @@ router.post('/chantiers', authMiddleware, async (req, res) => {
             });
         }
 
-        const chantier = await Chantier.create(req.body);
+        // Add creator information to the request body
+        const chantierData = {
+            ...req.body,
+            createdBy: req.user.id
+        };
+
+        const chantier = await Chantier.create(chantierData);
         res.status(201).json(chantier);
     } catch (error) {
         console.error('Error creating chantier:', error);
@@ -27,7 +33,9 @@ router.post('/chantiers', authMiddleware, async (req, res) => {
 // Get all chantiers
 router.get('/chantiers', authMiddleware, async (req, res) => {
     try {
-        const chantiers = await Chantier.find();
+        const chantiers = await Chantier.find()
+            .populate('createdBy', 'name email')
+            .populate('chefResponsable', 'name email');
         res.json(chantiers);
     } catch (error) {
         console.error('Error fetching chantiers:', error);
@@ -41,7 +49,9 @@ router.get('/chantiers', authMiddleware, async (req, res) => {
 // Get a single chantier by ID
 router.get('/chantiers/:id', authMiddleware, async (req, res) => {
     try {
-        const chantier = await Chantier.findById(req.params.id);
+        const chantier = await Chantier.findById(req.params.id)
+            .populate('createdBy', 'name email')
+            .populate('chefResponsable', 'name email');
         if (!chantier) {
             return res.status(404).json({ message: 'Chantier non trouvé' });
         }

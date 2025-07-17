@@ -6,6 +6,11 @@ const MaterielSchema = new mongoose.Schema({
         required: [true, 'Please provide equipment name'],
         trim: true
     },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Creator is required']
+    },
     type: {
         type: String,
         required: [true, 'Please provide equipment type'],
