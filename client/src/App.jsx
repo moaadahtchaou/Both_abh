@@ -5,8 +5,11 @@ import Materiel from './pages/Materiel'
 import Rapports from './pages/RapportView'
 import Login from './pages/Login'
 import AddChantier from './pages/AddChantier'
+import AddMateriel from './pages/AddMateriel'
+import AddChef from './pages/AddChef'
 import Sidebar from './components/Layout/Sidebar'
 import Header from './components/Layout/Header'
+import AdminRoute from './components/auth/AdminRoute'
 import { initialSites, initialEquipment, recentActivities } from './store/db'
 import { useState } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
@@ -127,11 +130,29 @@ function App() {
 	        </ProtectedRoute>
 	      } />
 
+	      <Route path="/materiel/add" element={
+	        <ProtectedRoute>
+	          <AuthenticatedLayout>
+	            <AddMateriel />
+	          </AuthenticatedLayout>
+	        </ProtectedRoute>
+	      } />
+
 	      <Route path="/rapports" element={
 	        <ProtectedRoute>
 	          <AuthenticatedLayout>
 	            <Rapports />
 	          </AuthenticatedLayout>
+	        </ProtectedRoute>
+	      } />
+
+	      <Route path="/chefs/add" element={
+	        <ProtectedRoute>
+	          <AdminRoute user={user}>
+	            <AuthenticatedLayout>
+	              <AddChef />
+	            </AuthenticatedLayout>
+	          </AdminRoute>
 	        </ProtectedRoute>
 	      } />
         </Routes>

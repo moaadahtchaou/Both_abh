@@ -1,4 +1,4 @@
-import { X, Menu, ChevronDown, Bell, Search, LogOut, User, Settings } from 'lucide-react';
+import { X, Menu, ChevronDown, Bell, Search, LogOut, User, Settings, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,20 +29,31 @@ const Header = ({ activeView, onToggleSidebar, isSidebarOpen, user }) => {
                 <h1 className="text-2xl font-bold text-gray-100">{activeView}</h1>
             </div>
             <div className="flex items-center space-x-6">
-
-                <button className="relative text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700">
-                    <Bell size={22} />
-                    <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full ring-2 ring-gray-800"></span>
-                </button>
-                <div className="relative hidden md:block">
+                {/* Admin-only button */}
+                {user?.role === 'Admin' && (
                     <button 
+                        onClick={() => navigate('/chefs/add')}
+                        className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all flex items-center space-x-2 shadow-lg"
+                    >
+                        <UserPlus size={18} />
+                        <span>Ajouter Chef</span>
+                    </button>
+                )}
+
+                {/* User Profile Dropdown */}
+                <div className="relative">
+                    <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center space-x-2 focus:outline-none"
+                        className="flex items-center space-x-3 focus:outline-none"
                     >
                         <div className="h-10 w-10 rounded-full ring-2 ring-gray-600 flex items-center justify-center bg-gray-800 text-white font-semibold">
                             {getUserInitials(user?.name)}
                         </div>
-                        <ChevronDown size={16} className={`text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
+                        <div className="hidden md:block text-left">
+                            <p className="text-sm font-semibold text-gray-200">{user?.name || 'User'}</p>
+                            <p className="text-xs text-gray-400">{user?.role || 'Guest'}</p>
+                        </div>
+                        <ChevronDown size={16} className="text-gray-400" />
                     </button>
 
                     {/* Dropdown Menu */}

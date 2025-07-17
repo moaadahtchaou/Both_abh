@@ -9,31 +9,58 @@ import {
   Mail,
   Briefcase,
   ArrowLeft,
-  Calculator
+  Calculator,
+  ClipboardList,
+  DollarSign,
+  Info
 } from 'lucide-react';
 
 const AddChantier = () => {
   const [formData, setFormData] = React.useState({
     name: '',
-    location: '',
+    location: {
+        address: '',
+        city: '',
+    },
+    client: {
+        name: '',
+        contact: {
+            phone: '',
+            email: ''
+        }
+    },
+    status: 'Planifié',
     startDate: '',
-    endDate: '',
-    status: 'En attente',
-    budget: '',
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    clientCompany: '',
+    estimatedEndDate: '',
+    budget: {
+        estimated: '',
+    },
     description: '',
-    teamSize: '',
+    assignedTeam: [],
+    documents: [],
+    notes: [],
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const keys = name.split('.');
+    
+    if (keys.length > 1) {
+        setFormData(prev => {
+            const newState = { ...prev };
+            let current = newState;
+            for (let i = 0; i < keys.length - 1; i++) {
+                current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
+            return newState;
+        });
+    } else {
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    }
   };
 
   const handleSubmit = (e) => {
@@ -58,258 +85,60 @@ const AddChantier = () => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 space-y-8">
-        {/* Basic Information */}
+      <form onSubmit={handleSubmit} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 space-y-10">
+        
+        {/* Section: Informations de base */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700/50 pb-2">
-            Informations de base
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm text-gray-400">
-                Nom du chantier
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="Entrez le nom du chantier"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="location" className="text-sm text-gray-400">
-                Localisation
-              </label>
-              <div className="relative">
-                <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Adresse du chantier"
-                  required
-                />
+            <h3 className="text-xl font-semibold text-gray-100 flex items-center">
+                <ClipboardList className="mr-3 text-sky-400" />
+                Informations de base
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-8">
+              <InputField icon={<Briefcase />} label="Nom du chantier" name="name" value={formData.name} onChange={handleChange} placeholder="ex: Projet Résidentiel" required />
+              <InputField icon={<MapPin />} label="Ville" name="location.city" value={formData.location.city} onChange={handleChange} placeholder="ex: Agadir" required />
+              <div className="md:col-span-2">
+                <InputField icon={<MapPin />} label="Adresse" name="location.address" value={formData.location.address} onChange={handleChange} placeholder="ex: 123 Rue Principale" required />
               </div>
+              <InputField icon={<Calendar />} label="Date de début" name="startDate" type="date" value={formData.startDate} onChange={handleChange} required />
+              <InputField icon={<Calendar />} label="Date de fin estimée" name="estimatedEndDate" type="date" value={formData.estimatedEndDate} onChange={handleChange} required />
+              <SelectField icon={<Info />} label="Statut" name="status" value={formData.status} onChange={handleChange} options={['Planifié', 'En cours', 'Terminé', 'En pause']} />
+              <InputField icon={<DollarSign />} label="Budget Estimé (€)" name="budget.estimated" type="number" value={formData.budget.estimated} onChange={handleChange} placeholder="ex: 50000" required />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="startDate" className="text-sm text-gray-400">
-                Date de début
-              </label>
-              <div className="relative">
-                <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="endDate" className="text-sm text-gray-400">
-                Date de fin prévue
-              </label>
-              <div className="relative">
-                <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="status" className="text-sm text-gray-400">
-                Statut
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              >
-                <option value="En attente">En attente</option>
-                <option value="Planifié">Planifié</option>
-                <option value="En cours">En cours</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="budget" className="text-sm text-gray-400">
-                Budget (€)
-              </label>
-              <div className="relative">
-                <Calculator size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="number"
-                  id="budget"
-                  name="budget"
-                  value={formData.budget}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Budget estimé"
-                  required
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Client Information */}
+        {/* Section: Informations du Client */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700/50 pb-2">
-            Informations du client
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="clientName" className="text-sm text-gray-400">
-                Nom du client
-              </label>
-              <div className="relative">
-                <Users size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  id="clientName"
-                  name="clientName"
-                  value={formData.clientName}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Nom complet"
-                  required
-                />
-              </div>
+            <h3 className="text-xl font-semibold text-gray-100 flex items-center">
+                <Users className="mr-3 text-sky-400" />
+                Informations du Client
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-8">
+                <InputField icon={<Users />} label="Nom du client" name="client.name" value={formData.client.name} onChange={handleChange} placeholder="ex: Jean Dupont" required />
+                <InputField icon={<Building2 />} label="Entreprise (Optionnel)" name="client.company" value={formData.client.company} onChange={handleChange} placeholder="ex: Acme Corp" />
+                <InputField icon={<Mail />} label="Email du client" name="client.contact.email" type="email" value={formData.client.contact.email} onChange={handleChange} placeholder="ex: client@example.com" required />
+                <InputField icon={<Phone />} label="Téléphone du client" name="client.contact.phone" type="tel" value={formData.client.contact.phone} onChange={handleChange} placeholder="ex: 06 12 34 56 78" required />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="clientCompany" className="text-sm text-gray-400">
-                Entreprise
-              </label>
-              <div className="relative">
-                <Building2 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  id="clientCompany"
-                  name="clientCompany"
-                  value={formData.clientCompany}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Nom de l'entreprise"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="clientEmail" className="text-sm text-gray-400">
-                Email
-              </label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="email"
-                  id="clientEmail"
-                  name="clientEmail"
-                  value={formData.clientEmail}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Email du client"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="clientPhone" className="text-sm text-gray-400">
-                Téléphone
-              </label>
-              <div className="relative">
-                <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="tel"
-                  id="clientPhone"
-                  name="clientPhone"
-                  value={formData.clientPhone}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Numéro de téléphone"
-                  required
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Additional Information */}
+        {/* Section: Description */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700/50 pb-2">
-            Informations supplémentaires
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2 md:col-span-2">
-              <label htmlFor="description" className="text-sm text-gray-400">
-                Description du projet
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={4}
-                className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="Description détaillée du projet..."
-              />
+            <h3 className="text-xl font-semibold text-gray-100 flex items-center">
+                <Info className="mr-3 text-sky-400" />
+                Description
+            </h3>
+            <div className="pl-8">
+              <TextareaField label="Description du projet" name="description" value={formData.description} onChange={handleChange} placeholder="Détails sur les travaux à réaliser, les objectifs, etc." />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="teamSize" className="text-sm text-gray-400">
-                Taille de l'équipe
-              </label>
-              <div className="relative">
-                <Users size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="number"
-                  id="teamSize"
-                  name="teamSize"
-                  value={formData.teamSize}
-                  onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="Nombre de personnes"
-                  min="1"
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Submit Button */}
         <div className="flex justify-end pt-6 border-t border-gray-700/50">
           <button
             type="submit"
-            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-6 py-2.5 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg"
+            className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-8 py-3 rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all flex items-center space-x-2 shadow-lg text-base font-semibold"
           >
             <Save size={20} />
-            <span>Enregistrer le chantier</span>
+            <span>Enregistrer le Chantier</span>
           </button>
         </div>
       </form>
@@ -317,4 +146,47 @@ const AddChantier = () => {
   );
 };
 
-export default AddChantier; 
+// Reusable Components for Form Fields
+const InputField = ({ icon, label, ...props }) => (
+    <div className="space-y-2">
+        <label htmlFor={props.name} className="text-sm font-medium text-gray-300">{label}</label>
+        <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{React.cloneElement(icon, { size: 18 })}</span>
+            <input
+                id={props.name}
+                {...props}
+                className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+            />
+        </div>
+    </div>
+);
+
+const SelectField = ({ icon, label, options, ...props }) => (
+    <div className="space-y-2">
+        <label htmlFor={props.name} className="text-sm font-medium text-gray-300">{label}</label>
+        <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{React.cloneElement(icon, { size: 18 })}</span>
+            <select
+                id={props.name}
+                {...props}
+                className="w-full appearance-none bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+            >
+                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+        </div>
+    </div>
+);
+
+const TextareaField = ({ label, ...props }) => (
+    <div className="space-y-2">
+        <label htmlFor={props.name} className="text-sm font-medium text-gray-300">{label}</label>
+        <textarea
+            id={props.name}
+            rows={4}
+            {...props}
+            className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+        />
+    </div>
+);
+
+export default AddChantier;
