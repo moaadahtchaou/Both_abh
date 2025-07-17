@@ -9,6 +9,7 @@ const { router: protectedRoutes } = require('./protected');
 const userRoutes = require('./routes/users'); // Updated path
 const chantierRoutes = require('./chantier');
 const materielRoutes = require('./materiel');
+const reportRoutes = require('./routes/reports');
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes); // Updated route path
 app.use('/api', chantierRoutes);
 app.use('/api', materielRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

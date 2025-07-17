@@ -2,7 +2,10 @@ import './App.css'
 import Dashboard from './pages/Dashboard'
 import Chantiers from './pages/Chantiers'
 import Materiel from './pages/Materiel'
-import Rapports from './pages/RapportView'
+import Reports from './pages/Reports'
+import CreateReport from './pages/CreateReport'
+import ReportDetails from './pages/ReportDetails'
+import EditReport from './pages/EditReport'
 import Login from './pages/Login'
 import AddChantier from './pages/AddChantier'
 import EditChantier from './pages/EditChantier'
@@ -189,7 +192,31 @@ function App() {
             <Route path="/rapports" element={
                 <ProtectedRoute>
                     <AuthenticatedLayout>
-                        <Rapports />
+                        <Reports user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/reports/new" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <CreateReport user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/reports/:id" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <ReportDetails user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/reports/edit/:id" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <EditReport user={user} />
                     </AuthenticatedLayout>
                 </ProtectedRoute>
             } />
