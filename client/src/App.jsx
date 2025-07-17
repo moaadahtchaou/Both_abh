@@ -6,8 +6,10 @@ import Rapports from './pages/RapportView'
 import Login from './pages/Login'
 import AddChantier from './pages/AddChantier'
 import EditChantier from './pages/EditChantier'
+import ChantierDetails from './pages/ChantierDetails'
 import AddMateriel from './pages/AddMateriel'
 import EditMateriel from './pages/EditMateriel'
+import MaterielDetails from './pages/MaterielDetails'
 import AddChef from './pages/AddChef'
 import Sidebar from './components/Layout/Sidebar'
 import Header from './components/Layout/Header'
@@ -122,6 +124,14 @@ function App() {
                 </ProtectedRoute>
             } />
 
+            <Route path="/chantiers/:id" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <ChantierDetails />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
+
             <Route path="/chantiers/add" element={
                 <ProtectedRoute>
                     <AdminRoute user={user}>
@@ -144,6 +154,14 @@ function App() {
                 <ProtectedRoute>
                     <AuthenticatedLayout>
                         <Materiel user={user} />
+                    </AuthenticatedLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/materiel/:id" element={
+                <ProtectedRoute>
+                    <AuthenticatedLayout>
+                        <MaterielDetails user={user} />
                     </AuthenticatedLayout>
                 </ProtectedRoute>
             } />

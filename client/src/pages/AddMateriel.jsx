@@ -37,6 +37,19 @@ const fetchChantiers = async () => {
   return data;
 };
 
+// Add this after the createMateriel function
+const assignEquipmentToChantier = async (chantierId, equipmentData) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.post(
+    `http://localhost:5000/api/chantiers/${chantierId}/equipment`,
+    equipmentData,
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  );
+  return response.data;
+};
+
 const AddMateriel = () => {
   const navigate = useNavigate();
   const [error, setError] = React.useState('');
@@ -53,8 +66,19 @@ const AddMateriel = () => {
 
   const mutation = useMutation({
     mutationFn: createMateriel,
-    onSuccess: () => {
-      navigate('/materiel');
+    onSuccess: async (data) => {
+      try {
+        // If a chantier is selected, assign the equipment to it
+        if (formData.location.currentSite) {
+          await assignEquipmentToChantier(formData.location.currentSite, {
+            item: data._id, // Use the newly created materiel's ID
+            assignedDate: new Date()
+          });
+        }
+        navigate('/materiel');
+      } catch (error) {
+        setError('Erreur lors de l\'assignation au chantier: ' + error.message);
+      }
     },
     onError: (error) => {
       setError(error.response?.data?.message || 'Une erreur est survenue lors de la création du matériel');

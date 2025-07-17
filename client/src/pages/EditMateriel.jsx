@@ -45,6 +45,19 @@ const updateMateriel = async ({ id, data }) => {
   return response.data;
 };
 
+// Add this after the updateMateriel function
+const assignEquipmentToChantier = async (chantierId, equipmentData) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.post(
+    `http://localhost:5000/api/chantiers/${chantierId}/equipment`,
+    equipmentData,
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  );
+  return response.data;
+};
+
 const EditMateriel = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -160,8 +173,7 @@ const EditMateriel = ({ user }) => {
           ...prev.location,
           currentSite: value || null,  // Convert empty string to null
           specificLocation: value ? prev.location.specificLocation : ''  // Clear specific location if no site
-        },
-        status: value ? 'En utilisation' : 'Disponible'  // Update status based on site selection
+        }
       }));
       return;
     }
@@ -195,7 +207,7 @@ const EditMateriel = ({ user }) => {
       ...formData,
       location: {
         ...formData.location,
-        currentSite: formData.location.currentSite || null,  // Ensure null for empty site
+        currentSite: formData.location.currentSite || null,
         specificLocation: formData.location.specificLocation || ''
       }
     };
@@ -215,8 +227,28 @@ const EditMateriel = ({ user }) => {
     delete dataToSubmit.createdAt;
     delete dataToSubmit.updatedAt;
 
-    console.log('Submitting data:', dataToSubmit);  // Debug log
-    mutation.mutate({ id, data: dataToSubmit });
+    // First update the materiel
+    mutation.mutate({ 
+      id, 
+      data: dataToSubmit 
+    }, {
+      onSuccess: async () => {
+        try {
+          // If a chantier is selected and it's different from the original chantier
+          if (dataToSubmit.location.currentSite && 
+              dataToSubmit.location.currentSite !== materiel.location?.currentSite?._id) {
+            // Assign equipment to the new chantier
+            await assignEquipmentToChantier(dataToSubmit.location.currentSite, {
+              item: id,
+              assignedDate: new Date()
+            });
+          }
+          navigate('/materiel');
+        } catch (error) {
+          setError('Erreur lors de l\'assignation au chantier: ' + error.message);
+        }
+      }
+    });
   };
 
   if (materielLoading) {
@@ -316,7 +348,6 @@ const EditMateriel = ({ user }) => {
               value={formData.status} 
               onChange={handleChange} 
               options={['Disponible', 'En utilisation', 'En maintenance', 'Hors service']} 
-              disabled={formData.location.currentSite !== ''} 
               required 
             />
           </div>

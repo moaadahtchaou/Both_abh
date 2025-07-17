@@ -35,6 +35,11 @@ const MaterielSchema = new mongoose.Schema({
         enum: ['Disponible', 'En utilisation', 'En maintenance', 'Hors service'],
         default: 'Disponible'
     },
+    condition: {
+        type: String,
+        enum: ['Neuf', 'Bon état', 'Usage normal', 'Nécessite maintenance', 'Hors service'],
+        default: 'Neuf'
+    },
     specifications: {
         brand: String,
         model: String,

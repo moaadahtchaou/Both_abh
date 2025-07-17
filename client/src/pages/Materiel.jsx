@@ -181,7 +181,7 @@ const Materiel = ({ user }) => {
     });
 
   const handleViewDetails = (equipment) => {
-    console.log('View details for:', equipment);
+    navigate(`/materiel/${equipment._id}`);
   };
 
   const handleEdit = (equipment) => {

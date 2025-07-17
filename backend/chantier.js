@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('./protected');
 const Chantier = require('./models/Chantier');
+const Materiel = require('./models/Materiel');
 
 // Helper function to check if user can modify chantier
 const canModifyChantier = (user, chantier) => {
@@ -43,12 +44,20 @@ router.get('/chantiers', authMiddleware, async (req, res) => {
             // Admins can see all chantiers
             chantiers = await Chantier.find()
                 .populate('createdBy', 'name email')
-                .populate('chefResponsable', 'name email');
+                .populate('chefResponsable', 'name email')
+                .populate({
+                    path: 'equipment.item',
+                    select: 'name type status identifier'
+                });
         } else {
             // Regular users can only see chantiers where they are the chef
             chantiers = await Chantier.find({ chefResponsable: req.user.id })
                 .populate('createdBy', 'name email')
-                .populate('chefResponsable', 'name email');
+                .populate('chefResponsable', 'name email')
+                .populate({
+                    path: 'equipment.item',
+                    select: 'name type status identifier'
+                });
         }
         res.json(chantiers);
     } catch (error) {
@@ -60,12 +69,120 @@ router.get('/chantiers', authMiddleware, async (req, res) => {
     }
 });
 
+// Add new endpoint to assign materiel to chantier
+router.post('/chantiers/:id/equipment', authMiddleware, async (req, res) => {
+    try {
+        const { materielId } = req.body;
+        if (!materielId) {
+            return res.status(400).json({ message: 'ID du matériel requis' });
+        }
+
+        const chantier = await Chantier.findById(req.params.id);
+        if (!chantier) {
+            return res.status(404).json({ message: 'Chantier non trouvé' });
+        }
+
+        // Check if user has permission
+        if (!canModifyChantier(req.user, chantier)) {
+            return res.status(403).json({ 
+                message: 'Accès refusé. Seuls l\'administrateur et le chef responsable peuvent modifier ce chantier.' 
+            });
+        }
+
+        // Add equipment to chantier
+        chantier.equipment.push({
+            item: materielId,
+            assignedDate: new Date(),
+            returnDate: null
+        });
+
+        // Update materiel status and location
+        await Materiel.findByIdAndUpdate(materielId, {
+            status: 'En utilisation',
+            'location.currentSite': chantier._id
+        });
+
+        const updatedChantier = await chantier.save();
+        
+        // Populate and return the updated chantier
+        const populatedChantier = await Chantier.findById(updatedChantier._id)
+            .populate('createdBy', 'name email')
+            .populate('chefResponsable', 'name email')
+            .populate({
+                path: 'equipment.item',
+                select: 'name type status identifier'
+            });
+
+        res.json(populatedChantier);
+    } catch (error) {
+        console.error('Error assigning equipment:', error);
+        res.status(500).json({ 
+            message: 'Erreur lors de l\'assignation du matériel',
+            error: error.message 
+        });
+    }
+});
+
+// Add endpoint to remove materiel from chantier
+router.delete('/chantiers/:chantierId/equipment/:equipmentId', authMiddleware, async (req, res) => {
+    try {
+        const chantier = await Chantier.findById(req.params.chantierId);
+        if (!chantier) {
+            return res.status(404).json({ message: 'Chantier non trouvé' });
+        }
+
+        // Check if user has permission
+        if (!canModifyChantier(req.user, chantier)) {
+            return res.status(403).json({ 
+                message: 'Accès refusé. Seuls l\'administrateur et le chef responsable peuvent modifier ce chantier.' 
+            });
+        }
+
+        // Find the equipment and mark return date
+        const equipment = chantier.equipment.id(req.params.equipmentId);
+        if (!equipment) {
+            return res.status(404).json({ message: 'Équipement non trouvé dans ce chantier' });
+        }
+
+        equipment.returnDate = new Date();
+        
+        // Update materiel status and location
+        await Materiel.findByIdAndUpdate(equipment.item, {
+            status: 'Disponible',
+            'location.currentSite': null
+        });
+
+        await chantier.save();
+
+        // Populate and return the updated chantier
+        const populatedChantier = await Chantier.findById(chantier._id)
+            .populate('createdBy', 'name email')
+            .populate('chefResponsable', 'name email')
+            .populate({
+                path: 'equipment.item',
+                select: 'name type status identifier'
+            });
+
+        res.json(populatedChantier);
+    } catch (error) {
+        console.error('Error removing equipment:', error);
+        res.status(500).json({ 
+            message: 'Erreur lors du retrait du matériel',
+            error: error.message 
+        });
+    }
+});
+
 // Get a single chantier by ID
 router.get('/chantiers/:id', authMiddleware, async (req, res) => {
     try {
         const chantier = await Chantier.findById(req.params.id)
             .populate('createdBy', 'name email')
-            .populate('chefResponsable', 'name email');
+            .populate('chefResponsable', 'name email')
+            .populate({
+                path: 'equipment.item',
+                select: 'name type status identifier'
+            });
         
         if (!chantier) {
             return res.status(404).json({ message: 'Chantier non trouvé' });

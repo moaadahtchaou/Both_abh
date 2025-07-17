@@ -170,7 +170,7 @@ const Chantiers: React.FC<ChantierProps> = ({ user }) => {
     });
 
   const handleViewDetails = (chantier) => {
-    console.log('View details for:', chantier);
+    navigate(`/chantiers/${chantier._id}`);
   };
 
   const handleEdit = (chantier) => {
